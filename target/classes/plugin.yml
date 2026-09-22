@@ -1,0 +1,22 @@
+name: OverworldPlus
+version: '1.0.0'
+main: com.estxbvnnn.overworldplus.OverworldPlusPlugin
+api-version: '26.1'
+author: estxbvnnn
+website: https://github.com/estxbvnnn
+description: Real hand-designed trees, richer ground and more dramatic mountains for the Overworld — done at generation time, no resource pack, no world regeneration needed.
+# STARTUP: enable before any world loads, so the world-generation populator is attached
+# in WorldInitEvent — ahead of spawn-chunk generation — and spawn comes out finished too.
+load: STARTUP
+
+commands:
+  overworldplus:
+    description: Manage OverworldPlus
+    usage: /overworldplus <reload|stats|pregen|testtree|testhouse|cleanvines>
+    permission: overworldplus.admin
+    aliases: [owplus]
+
+permissions:
+  overworldplus.admin:
+    description: Manage OverworldPlus
+    default: op

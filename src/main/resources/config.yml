@@ -1,0 +1,104 @@
+# OverworldPlus by estxbvnnn — https://github.com/estxbvnnn
+#
+# New chunks are enhanced WHILE THEY GENERATE, before the server ever sends
+# them to a player — nobody sees a vanilla tree first and a big one a second
+# later; the chunk simply arrives finished. Chunks that already existed
+# before the plugin get the exact same treatment once, the first time they
+# load (tracked in the chunk's own data, so it also fixes an old world
+# without deleting it). See README.md.
+#
+# Nothing in here is a dice roll for *whether* something happens. Where a
+# feature has to vary from place to place (where each tree stands, which
+# chunk gets the waterfall, where the podzol falls), it's a fixed function
+# of the coordinates and the world seed — the same spot always comes out the
+# same way, on every restart, on either path.
+
+pregen:
+  # On startup, right after vanilla's own "Preparing spawn area", pre-generate
+  # (and so pre-enhance) this many chunks in every direction around spawn —
+  # like vanilla's spawn preparation, but for the whole area a new player
+  # will actually walk through. Progress is logged to console. Remembered per
+  # world (pregen.yml), so a restart doesn't redo it; raising the radius only
+  # does the new ring. 16 chunks = a 33x33-chunk square, ~530 blocks out.
+  enabled: true
+  radius-chunks: 16
+  # Nobody can join until the startup pre-generation finishes (they get a
+  # progress message instead) — so the first thing anyone sees is done.
+  block-joins-until-done: true
+
+performance:
+  # Old chunks (from before the plugin) are enhanced a few per tick while
+  # players are online; 1 is the smoothest.
+  chunks-per-tick: 1
+  # ...and much faster when nobody is online, since there's nobody to lag.
+  idle-chunks-per-tick: 20
+
+trees:
+  enabled: true
+  # The world is cut into cells this many blocks wide; each cell owns one
+  # candidate tree spot (jittered by a coordinate hash), so big trees are
+  # always at least ~2/3 of this apart — everywhere, across chunk borders,
+  # with no per-chunk bookkeeping. Real canopies run 15-26 wide, so 20 keeps
+  # them just touching. Which cells actually get a tree depends on the biome
+  # (every cell in a forest, one in ten on the plains, none in a desert).
+  spacing: 20
+  # Jungle is the one place that should be a wall of trees: its own, tighter
+  # grid. Canopies overlap heavily on purpose.
+  jungle-spacing: 10
+  # Fallen logs, low shrubs, ferns/grass/mushrooms around each big tree, and
+  # vines trailing off jungle canopies.
+  undergrowth: true
+
+terrain:
+  enabled: true
+  # Coherent patches of podzol/moss/coarse dirt/bare rock in the grass, by
+  # biome, from seeded noise — the ground stops being one uniform sheet.
+  surface-variation: true
+  # Slopes too steep to hold soil show bare stone (mossy where it's wet).
+  slope-rock: true
+  # Gravel/sand where grass meets water, so banks look like banks.
+  shorelines: true
+  # Extra grass/ferns/flowers in noise-defined thickets, by biome.
+  vegetation: true
+
+mountains:
+  enabled: true
+  # How many spots per mountain chunk get checked for snow/boulders.
+  samples-per-chunk: 5
+  snow-enhancement: true
+  max-boulders-per-chunk: 2
+  # Each waterfall is a water source with physics on — it flows down the whole
+  # cliff and keeps ticking forever, which is expensive. One per this many
+  # mountain chunks (picked by a fixed coordinate rule), never more than one
+  # per chunk.
+  waterfall-every-n-chunks: 6
+  rock-spire:
+    enabled: true
+    # Still a rare landmark on purpose: one mountain chunk in ~100 (fixed by coordinate).
+    spawn-chance-per-chunk: 0.01
+    min-spacing: 300
+
+structures:
+  enabled: true
+  village:
+    spot-chance: 0.7
+  stronghold:
+    samples: 60
+    decay-chance: 0.7
+  ruined-portal:
+    vine-chance: 0.6
+    debris-chance: 0.7
+
+biomes:
+  enabled: true
+  # How many spots per chunk get checked against the biome-specific decorations
+  # (desert, badlands, snowy plains, mushroom fields, plains, dark forest,
+  # savanna, cherry groves, jungle floors, swamps, and lush/dripstone caves).
+  samples-per-chunk: 6
+
+abandoned-houses:
+  enabled: true
+  # A standalone find in the wild — a real hand-built schematic (ancient
+  # lighthouse), pasted exactly as designed. One eligible chunk in ~100.
+  spawn-chance-per-chunk: 0.01
+  min-spacing: 220
