@@ -8,6 +8,8 @@ import com.estxbvnnn.overworldplus.structures.AbandonedHouseGenerator;
 import com.estxbvnnn.overworldplus.structures.StructureSchematic;
 import com.estxbvnnn.overworldplus.structures.StructureSchematicLibrary;
 import com.estxbvnnn.overworldplus.structures.VineCleanup;
+import com.estxbvnnn.overworldplus.structures.stronghold.StrongholdExpansion;
+import com.estxbvnnn.overworldplus.structures.yung.YungStructures;
 import com.estxbvnnn.overworldplus.trees.SchematicTreeLibrary;
 import com.estxbvnnn.overworldplus.trees.TreeSpecies;
 import org.bukkit.Bukkit;
@@ -31,10 +33,14 @@ public class OverworldPlusCommand implements CommandExecutor {
     private final StructureSchematicLibrary structureLibrary;
     private final ChunkEnhanceListener listener;
     private final Pregenerator pregenerator;
+    private final StrongholdExpansion strongholds;
+    private final YungStructures yung;
 
     public OverworldPlusCommand(JavaPlugin plugin, SchematicTreeLibrary treeLibrary,
                                 StructureSchematicLibrary structureLibrary, ChunkEnhanceListener listener,
-                                Pregenerator pregenerator) {
+                                Pregenerator pregenerator, StrongholdExpansion strongholds, YungStructures yung) {
+        this.strongholds = strongholds;
+        this.yung = yung;
         this.plugin = plugin;
         this.treeLibrary = treeLibrary;
         this.structureLibrary = structureLibrary;
@@ -59,9 +65,13 @@ public class OverworldPlusCommand implements CommandExecutor {
             case "cleanvines" -> cleanVines(sender, args.length >= 2 ? args[1] : null);
             case "pregen" -> pregen(sender, args);
             case "verify" -> verify(sender, args);
+            case "stronghold" -> {
+                if (args.length >= 2 && args[1].equalsIgnoreCase("map")) strongholdMap(sender, args);
+                else stronghold(sender, args);
+            }
             default -> {
                 sender.sendMessage(ChatColor.YELLOW + "Usage: /" + label
-                        + " <reload|stats|pregen <radius> [world]|pregen stop|verify [radius] [world]|testtree [species]|testhouse [world x z]|cleanvines [radius]>");
+                        + " <reload|stats|pregen <radius> [world]|pregen stop|verify [radius] [world]|stronghold [x z]|stronghold map [above] [x z]|testtree [species]|testhouse [world x z]|cleanvines [radius]>");
                 sender.sendMessage(ChatColor.GRAY + "Species: oak, birch, spruce, jungle, acacia, dark_oak, mangrove, cherry, pale_oak");
             }
         }
@@ -152,6 +162,83 @@ public class OverworldPlusCommand implements CommandExecutor {
         com.estxbvnnn.overworldplus.trees.TreeAudit.Report report =
                 com.estxbvnnn.overworldplus.trees.TreeAudit.run(world, cx, cz, radius, treeLibrary, plugin.getConfig());
         sender.sendMessage(ChatColor.GREEN + "[OverworldPlus] " + ChatColor.WHITE + report);
+    }
+
+    /**
+     * Finds the nearest stronghold (to the player, or to spawn from console), loads it and gives
+     * it its wing now instead of whenever someone first wanders near — for checking the design.
+     */
+    private void stronghold(CommandSender sender, String[] args) {
+        World world = sender instanceof Player player ? player.getWorld() : Bukkit.getWorlds().get(0);
+        org.bukkit.Location from = sender instanceof Player player ? player.getLocation() : world.getSpawnLocation();
+        if (args.length >= 3) {
+            try {
+                from = new org.bukkit.Location(world, Integer.parseInt(args[1]), 64, Integer.parseInt(args[2]));
+            } catch (NumberFormatException e) {
+                sender.sendMessage(ChatColor.RED + "x and z must be numbers.");
+                return;
+            }
+        }
+        org.bukkit.util.StructureSearchResult found = world.locateNearestStructure(
+                from, org.bukkit.generator.structure.Structure.STRONGHOLD, 100, false);
+        if (found == null) {
+            sender.sendMessage(ChatColor.RED + "[OverworldPlus] No stronghold found nearby.");
+            return;
+        }
+        org.bukkit.Location at = found.getLocation();
+        sender.sendMessage(ChatColor.GREEN + "[OverworldPlus] Stronghold near " + at.getBlockX() + ", " + at.getBlockZ()
+                + " — loading it...");
+        world.getChunkAtAsync(at.getBlockX() >> 4, at.getBlockZ() >> 4).thenAccept(chunk -> {
+            for (org.bukkit.generator.structure.GeneratedStructure s
+                    : chunk.getStructures(org.bukkit.generator.structure.Structure.STRONGHOLD)) {
+                java.util.function.Consumer<String> report = outcome ->
+                        sender.sendMessage(ChatColor.GREEN + "[OverworldPlus] " + ChatColor.WHITE + "Stronghold: " + outcome);
+                if (yung.strongholdsEnabled()) yung.considerStronghold(world, s, report);
+                else strongholds.consider(world, s, report);
+                return;
+            }
+            sender.sendMessage(ChatColor.RED + "[OverworldPlus] That chunk holds no stronghold piece.");
+        });
+    }
+
+    /** Writes a top-down slice of the nearest stronghold and its wing to plugins/OverworldPlus/stronghold-map.txt. */
+    private void strongholdMap(CommandSender sender, String[] args) {
+        World world = sender instanceof Player player ? player.getWorld() : Bukkit.getWorlds().get(0);
+        org.bukkit.Location from = sender instanceof Player player ? player.getLocation() : world.getSpawnLocation();
+        if (args.length >= 5) {
+            try {
+                from = new org.bukkit.Location(world, Integer.parseInt(args[3]), 64, Integer.parseInt(args[4]));
+            } catch (NumberFormatException e) {
+                sender.sendMessage(ChatColor.RED + "x and z must be numbers.");
+                return;
+            }
+        }
+        org.bukkit.util.StructureSearchResult found = world.locateNearestStructure(
+                from, org.bukkit.generator.structure.Structure.STRONGHOLD, 100, false);
+        if (found == null) {
+            sender.sendMessage(ChatColor.RED + "[OverworldPlus] No stronghold found nearby.");
+            return;
+        }
+        int above = 1;
+        if (args.length >= 3) {
+            try {
+                above = Integer.parseInt(args[2]);
+            } catch (NumberFormatException ignored) {
+                // keep 1
+            }
+        }
+        org.bukkit.Chunk chunk = world.getChunkAt(found.getLocation());
+        for (org.bukkit.generator.structure.GeneratedStructure s
+                : chunk.getStructures(org.bukkit.generator.structure.Structure.STRONGHOLD)) {
+            java.io.File out = new java.io.File(plugin.getDataFolder(), "stronghold-map.txt");
+            try {
+                java.nio.file.Files.write(out.toPath(), strongholds.map(world, s, above));
+                sender.sendMessage(ChatColor.GREEN + "[OverworldPlus] Map written to " + out.getPath());
+            } catch (java.io.IOException e) {
+                sender.sendMessage(ChatColor.RED + "[OverworldPlus] Couldn't write the map: " + e.getMessage());
+            }
+            return;
+        }
     }
 
     /** Pastes a random (or specified) species' tree at the player's feet immediately — no biome check. */

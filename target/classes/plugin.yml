@@ -12,7 +12,7 @@ load: STARTUP
 commands:
   overworldplus:
     description: Manage OverworldPlus
-    usage: /overworldplus <reload|stats|pregen|testtree|testhouse|cleanvines>
+    usage: /overworldplus <reload|stats|pregen|verify|stronghold|testtree|testhouse|cleanvines>
     permission: overworldplus.admin
     aliases: [owplus]
 

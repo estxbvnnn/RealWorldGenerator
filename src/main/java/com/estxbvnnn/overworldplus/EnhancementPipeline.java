@@ -31,7 +31,7 @@ public final class EnhancementPipeline {
             Biome.PLAINS, Biome.SUNFLOWER_PLAINS, Biome.FOREST, Biome.BIRCH_FOREST, Biome.DARK_FOREST,
             Biome.OLD_GROWTH_BIRCH_FOREST, Biome.TAIGA, Biome.OLD_GROWTH_PINE_TAIGA, Biome.OLD_GROWTH_SPRUCE_TAIGA,
             Biome.SNOWY_TAIGA, Biome.SAVANNA, Biome.SAVANNA_PLATEAU, Biome.MEADOW, Biome.SWAMP,
-            Biome.FLOWER_FOREST, Biome.CHERRY_GROVE, Biome.BEACH, Biome.SNOWY_BEACH, Biome.STONY_SHORE
+            Biome.FLOWER_FOREST, Biome.CHERRY_GROVE // beaches belong to AbyssDepths' beach pieces
     );
     // The schematic's own recorded paste point (where its builder stood): local x=18 sits one
     // step east of its 18-wide footprint, z=4 sits centered on its 9-long footprint.

@@ -69,6 +69,9 @@ public final class TerrainDetailer {
 
                 Material ground = area.type(x, topY, z);
                 Biome biome = area.biome(x, topY, z);
+                // Beaches and deserts carry AbyssDepths' hand-built pieces (grass islands, stone
+                // jetties, huts): only natural sand is varied there, nothing else is touched.
+                if ((BEACH_LIKE.contains(biome) || DESERT_LIKE.contains(biome)) && ground != Material.SAND) continue;
                 boolean jungle = JUNGLE_LIKE.contains(biome);
                 int slope = slopeAt(area, x, z, topY);
                 double patch = noise.patch(x, z);

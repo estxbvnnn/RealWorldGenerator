@@ -127,6 +127,56 @@ schematic uses that this server version renamed are translated
 (`grass` → `short_grass`); anything unknown skips that one block, never the
 building.
 
+### YUNG's structure overhauls
+
+Four of YUNG's structure mods are bundled (LGPL-3.0, by YUNGNICKYOUNG — see
+`yung/NOTICE.txt` and the licences next to it in the jar) and rebuilt for
+Paper from their own data: **Better Strongholds**, **Better Jungle Temples**,
+**Better Witch Huts** (with its stone witch circles) and **Better Ocean
+Monuments**. Desert temples are deliberately not included.
+
+Vanilla still decides where each structure goes — `/locate`, explorer maps,
+the eye of ender and the structure's mob spawning keep working. While one of
+those vanilla structures generates, its blocks are dropped
+(`AsyncStructureGenerateEvent`): it stays registered but invisible. The first
+time the area loads, the YUNG version is laid out on that spot with YUNG's
+own rules (`JigsawAssembler`: the game's jigsaw placement plus `max_count`,
+`min_required_depth`, `is_priority`, `ignore_bounds`; a stronghold always
+gets exactly one portal room) and placed a few thousand blocks a tick with
+YUNG's processors reimplemented (`Processing`): ores and rare blocks, banners,
+armour stands and item frames, legs and pillars down to the ground, trapped
+dispensers, brewing stands, waterlogging, copper weathering and so on. It
+waits if a player is standing where it would build.
+
+Chest loot tables are installed as a datapack in the world
+(`datapacks/overworldplus_yung`) and load from the next server start; until
+then those chests use the matching vanilla loot. Structures that generated
+before this was installed are left as they are — except strongholds, whose
+old vanilla rooms are filled back in with rock under the new one (one
+stronghold, one portal), unless they already had the wing below.
+`structures.yung.*` and `structures.stronghold.mode` in config.yml.
+
+Not included: YUNG's Better Mineshafts builds its mines in Java code rather
+than from templates, so it would need its generator rewritten, not ported.
+
+### Stronghold wings
+
+Used when `structures.stronghold.mode` is `wing` instead of `better`.
+Vanilla's stronghold layout is hardcoded, so instead of replacing it every
+stronghold gets a new wing added the first time one of its chunks loads —
+portal room, eye of ender and `/locate` stay exactly as vanilla made them.
+The wing is a gatehouse, a great hall (pillars with ribbed ceiling,
+chandeliers, a throne on a dais) and four of six side rooms: library,
+crypt (skeleton spawner), prison (a broken cell with a zombie spawner),
+armory, alchemy lab and a vault walled with silverfish-infested stone.
+Chests use the stronghold's own loot tables (filled when first opened).
+It goes out of whichever side has the whole wing underground (6+ blocks of
+cover), joined to that side's outermost corridor by a straight tunnel that
+opens through the corridor's wall; the side and the rooms are fixed by the
+stronghold's position. Built on the main thread a few thousand blocks a
+tick (never while a player is right there); the stronghold's own persistent
+data records it's done. `structures.stronghold.wing` in config.yml.
+
 ### Cleaning up after older versions
 
 Chunks enhanced by earlier versions of this plugin may hold vines hanging
@@ -151,10 +201,17 @@ of the world — not something that reverts if the plugin is removed.
 /overworldplus testtree [species]
 /overworldplus testhouse [world x z]
 /overworldplus cleanvines [radius]
+/overworldplus verify [radius] [world x z]
+/overworldplus stronghold [x z]
+/overworldplus stronghold map [blocks-above-floor] [x z]
 ```
 `stats` shows chunks enhanced / trees placed / vanilla trees removed this
 session plus pre-generation progress. `testtree` pastes a tree at your
-feet, `testhouse` the lighthouse (from console: with world/x/z). Needs
+feet, `testhouse` the lighthouse (from console: with world/x/z). `verify`
+audits trees (missing trunks, floating bases, vanilla trees or bare trunks
+left). `stronghold` gives the nearest stronghold its wing now; `stronghold
+map` writes a top-down slice of it (loaded chunks only) to
+`stronghold-map.txt`. Needs
 `overworldplus.admin` (default: op).
 
 ## Compatibility

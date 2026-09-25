@@ -1,0 +1,21 @@
+OverworldPlus bundles structure data from four mods by YUNGNICKYOUNG
+(https://github.com/YUNG-GANG), each licensed under the GNU Lesser General
+Public License v3.0 (LGPL-3.0). Their licence files are in this folder
+(LICENSE_Yungs*), together with the GNU GPL v3.0 text the LGPL builds on
+(LICENSE_GPL-3.0.txt).
+
+  YUNG's Better Strongholds      26.1.2-Fabric-6.1.1  -> yung/betterstrongholds/
+  YUNG's Better Jungle Temples   26.1.2-Fabric-4.1.1  -> yung/betterjungletemples/
+  YUNG's Better Witch Huts       26.1.2-Fabric-5.1.1  -> yung/betterwitchhuts/
+  YUNG's Better Ocean Monuments  26.1.2-Fabric-5.1.1  -> yung/betteroceanmonuments/
+
+What was taken: the structure templates (structure/*.nbt), template pools,
+processor lists and chest loot tables, unmodified — except that the
+jungle temples' mod-integration pieces (Create, Supplementaries, Alex's
+Mobs) are left out, since they only ever generate with those mods.
+
+What was rebuilt: YUNG's jigsaw placement rules and structure processors,
+reimplemented for Paper in com.estxbvnnn.overworldplus.structures.yung
+(JigsawLibrary, JigsawAssembler, Processing, YungStructures, Nbt). That
+package is derived from the mods' behaviour and is itself offered under
+the LGPL-3.0; its source is published with OverworldPlus.

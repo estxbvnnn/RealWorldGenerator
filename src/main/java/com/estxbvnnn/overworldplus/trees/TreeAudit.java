@@ -15,11 +15,12 @@ import java.util.List;
 public final class TreeAudit {
 
     public record Report(int trees, int missingTrunk, int woodMissingSome, int floatingBase, int chunksChecked,
-                         List<String> details) {
+                         int vanillaLeft, int leafless, List<String> details) {
         @Override
         public String toString() {
             return trees + " tree(s) in " + chunksChecked + " loaded chunk(s): " + missingTrunk + " with no trunk at the anchor, "
-                    + woodMissingSome + " missing >10% of their wood, " + floatingBase + " with a base block over air."
+                    + woodMissingSome + " missing >10% of their wood, " + floatingBase + " with a base block over air; "
+                    + vanillaLeft + " vanilla tree(s) still standing, " + leafless + " bare trunk(s) with no leaves."
                     + (details.isEmpty() ? "" : " First: " + String.join(" | ", details));
         }
     }
@@ -74,7 +75,63 @@ public final class TreeAudit {
                 }
             }
         }
-        return new Report(trees, missingTrunk, woodMissing, floating, chunks, details);
+        int[] leftovers = leftovers(world, area, centerChunkX, centerChunkZ, radiusChunks, library, settings, details);
+        return new Report(trees, missingTrunk, woodMissing, floating, chunks, leftovers[0], leftovers[1], details);
+    }
+
+    /**
+     * Every other trunk standing on soil in the loaded chunks — anything that isn't one of the
+     * planned big trees: [0] vanilla trees still standing (natural leaves on them; mangroves,
+     * jungle floor bushes and the beach/desert biomes, which are left alone on purpose, don't
+     * count), [1] bare trunks with no leaves touching them at all.
+     */
+    private static int[] leftovers(World world, Area area, int centerChunkX, int centerChunkZ, int radiusChunks,
+                                   SchematicTreeLibrary library, TreeGrid.Settings settings, List<String> details) {
+        java.util.Set<Long> planned = new java.util.HashSet<>();
+        for (int cx = centerChunkX - radiusChunks - 1; cx <= centerChunkX + radiusChunks + 1; cx++) {
+            for (int cz = centerChunkZ - radiusChunks - 1; cz <= centerChunkZ + radiusChunks + 1; cz++) {
+                for (TreeGrid.PlannedTree tree : TreeGrid.planChunk(area, cx, cz, library, settings)) {
+                    SchematicTreeLibrary.collectWood(tree.tree(), tree.x(), tree.y(), tree.z(), planned);
+                }
+            }
+        }
+        int vanilla = 0, bare = 0;
+        java.util.Set<Long> seen = new java.util.HashSet<>();
+        for (int cx = centerChunkX - radiusChunks; cx <= centerChunkX + radiusChunks; cx++) {
+            for (int cz = centerChunkZ - radiusChunks; cz <= centerChunkZ + radiusChunks; cz++) {
+                if (!world.isChunkLoaded(cx, cz)) continue;
+                for (int x = cx << 4; x < (cx << 4) + 16; x++) {
+                    for (int z = cz << 4; z < (cz << 4) + 16; z++) {
+                        TreeEnhancer.Pos base = TreeEnhancer.findTrunkBase(area, x, z);
+                        if (base == null) continue;
+                        long key = com.estxbvnnn.overworldplus.BlockKey.of(base.x(), base.y(), base.z());
+                        if (planned.contains(key) || !seen.add(key)) continue;
+                        // Kept on purpose (mangroves, jungle bushes, beach/desert pieces): only a bare one is a problem.
+                        boolean kept = TreeEnhancer.leftAloneOnPurpose(area, base);
+                        // A log lying on its side is a fallen log (ForestFloor's, or vanilla's own) — not a tree.
+                        if (area.data(base.x(), base.y(), base.z()) instanceof org.bukkit.block.data.Orientable log
+                                && log.getAxis() != org.bukkit.Axis.Y) continue;
+                        java.util.Set<TreeEnhancer.Pos> logs = TreeEnhancer.collectTree(area, base, planned);
+                        logs.forEach(p -> seen.add(com.estxbvnnn.overworldplus.BlockKey.of(p.x(), p.y(), p.z())));
+                        TreeEnhancer.LeafContact contact = TreeEnhancer.leafContact(area, logs);
+                        String what = null;
+                        if (contact == TreeEnhancer.LeafContact.NATURAL && !kept) {
+                            vanilla++;
+                            what = "vanilla ";
+                        } else if (contact == TreeEnhancer.LeafContact.NONE
+                                && !(kept && TreeEnhancer.inHandsOffBiome(area, base))) {
+                            bare++;
+                            what = "bare ";
+                        }
+                        if (what != null && details.size() < 8) {
+                            details.add(what + area.type(base.x(), base.y(), base.z()).name().toLowerCase() + "x" + logs.size()
+                                    + " @" + base.x() + "," + base.y() + "," + base.z());
+                        }
+                    }
+                }
+            }
+        }
+        return new int[]{vanilla, bare};
     }
 
     private static boolean isWood(Material type) {

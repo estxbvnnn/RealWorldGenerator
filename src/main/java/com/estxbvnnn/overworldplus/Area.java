@@ -138,10 +138,16 @@ public final class Area {
         return accessor.getBiome(x, Math.max(minY, Math.min(maxY - 1, y)), z);
     }
 
-    /** Y of the highest block per the heightmap, or minY if the column is outside a region's bounds. */
+    /**
+     * Y of the highest block per the heightmap, or minY if the column is outside a region's bounds.
+     * During generation a LimitedRegion reports the first free Y above that block (one higher
+     * than a loaded World does — measured on a real generated ocean), so it's normalised here;
+     * every pass relies on both paths agreeing.
+     */
     public int highestY(int x, int z, HeightMap map) {
-        if (region != null && !region.isInRegion(x, minY, z)) return minY;
-        return accessor.getHighestBlockYAt(x, z, map);
+        if (region == null) return accessor.getHighestBlockYAt(x, z, map);
+        if (!region.isInRegion(x, minY, z)) return minY;
+        return region.getHighestBlockYAt(x, z, map) - 1;
     }
 
     public boolean isSolid(int x, int y, int z) {

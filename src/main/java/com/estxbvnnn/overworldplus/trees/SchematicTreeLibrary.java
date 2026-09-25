@@ -119,10 +119,10 @@ public final class SchematicTreeLibrary {
             int x = ax + offset.dx(), y = ay + offset.dy(), z = az + offset.dz();
             if (offset.type() == SchematicTree.Type.LEAVES) {
                 Material existing = area.type(x, y, z);
-                // Never let foliage cut through a neighboring tree's wood (jungle canopies
-                // overlap on purpose), and never let a drooping branch's leaves replace ground.
+                // Foliage only fills open space (or merges with other leaves): it never cuts through
+                // a neighbouring tree's wood, a hillside, or something built there.
                 if (isWood(existing)) continue;
-                if (offset.dy() <= 0 && existing.isSolid() && !isTreeBlock(existing)) continue;
+                if (existing.isSolid() && !existing.name().endsWith("_LEAVES")) continue;
             }
             applyBlock(area, x, y, z, offset.type(), species);
         }

@@ -85,6 +85,42 @@ structures:
   stronghold:
     samples: 60
     decay-chance: 0.7
+    # better  = every stronghold becomes a YUNG's Better Strongholds one (LGPL-3.0,
+    #           bundled): grand library, crypts, prisons, armouries, mess hall,
+    #           treasure rooms, spiral stairs, statues — laid out around vanilla's
+    #           own spot so the eye of ender still leads there; vanilla's rooms
+    #           are filled back in (one stronghold, one portal).
+    # wing    = keep vanilla's stronghold and add the wing below.
+    # vanilla = leave strongholds alone.
+    mode: better
+    wing:
+      # Every stronghold gets a new wing the first time it's loaded: a gatehouse,
+      # a great hall with a throne, and four of six rooms (library, crypt, prison,
+      # armory, alchemy lab, vault), joined to one of its corridors by a tunnel.
+      # Vanilla's own rooms, the portal and the eye of ender are left untouched.
+      # Chests use the stronghold's own loot tables. Built underground only.
+      enabled: true
+      # Blocks placed per tick while building one (about 15,000 in total).
+      blocks-per-tick: 4000
+  # YUNG's structure overhauls (LGPL-3.0, bundled — licences in the plugin jar
+  # under yung/). Vanilla still decides where each one goes (so /locate,
+  # explorer maps and mob spawning keep working); its blocks are dropped while
+  # it generates and YUNG's version is built on that spot the first time the
+  # area loads. Structures that generated before this was installed are left
+  # alone (except strongholds, see stronghold.mode). Chest loot tables are
+  # installed as a datapack in the world and load from the next server start.
+  yung:
+    jungle-temple:
+      enabled: true
+    witch-hut:
+      enabled: true
+    # A stone circle with a witch, now and then in swamps (a structure of its own).
+    witch-circle:
+      enabled: true
+    ocean-monument:
+      enabled: true
+    # Blocks placed per tick while building one.
+    blocks-per-tick: 20000
   ruined-portal:
     vine-chance: 0.6
     debris-chance: 0.7

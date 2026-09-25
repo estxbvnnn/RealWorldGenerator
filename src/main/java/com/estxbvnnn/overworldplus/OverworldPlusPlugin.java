@@ -3,12 +3,15 @@ package com.estxbvnnn.overworldplus;
 import com.estxbvnnn.overworldplus.commands.OverworldPlusCommand;
 import com.estxbvnnn.overworldplus.mountains.SpireRegistry;
 import com.estxbvnnn.overworldplus.structures.StructureSchematicLibrary;
+import com.estxbvnnn.overworldplus.structures.stronghold.StrongholdExpansion;
+import com.estxbvnnn.overworldplus.structures.yung.YungStructures;
 import com.estxbvnnn.overworldplus.trees.SchematicTreeLibrary;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerLoginEvent;
+import org.bukkit.event.world.WorldInitEvent;
 import org.bukkit.event.world.WorldLoadEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -19,6 +22,7 @@ public class OverworldPlusPlugin extends JavaPlugin implements Listener {
     private Pregenerator pregenerator;
     private ChunkEnhanceListener listener;
     private PopulatedChunkLedger ledger;
+    private YungStructures yung;
 
     @Override
     public void onEnable() {
@@ -39,6 +43,11 @@ public class OverworldPlusPlugin extends JavaPlugin implements Listener {
         Bukkit.getScheduler().runTaskTimerAsynchronously(this, ledger::saveIfDirty, 20L, 20L);
 
         getServer().getPluginManager().registerEvents(listener, this);
+        StrongholdExpansion strongholds = new StrongholdExpansion(this, getConfig(), getLogger());
+        getServer().getPluginManager().registerEvents(strongholds, this);
+        yung = new YungStructures(this, getFile(), getConfig(), getLogger());
+        getServer().getPluginManager().registerEvents(yung, this);
+        for (World world : Bukkit.getWorlds()) installStrongholdLoot(world);
         getServer().getPluginManager().registerEvents(this, this);
 
         // This plugin loads at STARTUP, before any world exists, precisely so WorldInitEvent can
@@ -69,7 +78,7 @@ public class OverworldPlusPlugin extends JavaPlugin implements Listener {
             }
         }, 1200L, 1200L);
 
-        getCommand("overworldplus").setExecutor(new OverworldPlusCommand(this, treeLibrary, structureLibrary, listener, pregenerator));
+        getCommand("overworldplus").setExecutor(new OverworldPlusCommand(this, treeLibrary, structureLibrary, listener, pregenerator, strongholds, yung));
 
         getLogger().info("OverworldPlus v" + getPluginMeta().getVersion()
                 + " by estxbvnnn (https://github.com/estxbvnnn) enabled.");
@@ -79,6 +88,18 @@ public class OverworldPlusPlugin extends JavaPlugin implements Listener {
     public void onDisable() {
         if (pregenerator != null) pregenerator.stop();
         if (ledger != null) ledger.saveIfDirty();
+        if (yung != null) yung.saveSuppressedIfDirty();
+    }
+
+    @EventHandler
+    public void onWorldInit(WorldInitEvent event) {
+        installStrongholdLoot(event.getWorld());
+    }
+
+    private void installStrongholdLoot(World world) {
+        if (world.getEnvironment() == World.Environment.NORMAL && yung != null) {
+            yung.installLootDatapack(world.getWorldFolder());
+        }
     }
 
     /** Vanilla has just finished its own spawn preparation for this world — ours starts right after. */
